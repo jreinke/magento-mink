@@ -11,7 +11,7 @@ class Mage_Shell_Mink extends Mage_Shell_Abstract
         $files = @glob($pattern);
         $renderer = $this->_getOutputRenderer();
         if (empty($files)) {
-            $renderer->bold('No test class found');
+            $renderer->output($renderer->bold('No test class found'));
         } else {
             require_once 'mink.phar';
             $driver = $this->_getMinkDriver();
@@ -29,7 +29,7 @@ class Mage_Shell_Mink extends Mage_Shell_Abstract
                     if (substr($method->getName(), 0, 4) !== 'test') {
                         continue;
                     }
-                    $renderer->bold(sprintf('Running %s::%s()', $className, $method->getName()));
+                    $renderer->output($renderer->bold(sprintf('Running %s::%s()', $className, $method->getName())));
                     $object->{$method->getName()}();
                 }
             }
