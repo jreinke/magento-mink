@@ -23,10 +23,10 @@ class JR_Mink_Test_Mink
      */
     public function __construct(\Behat\Mink\Driver\DriverInterface $driver, JR_Output_Renderer_Abstract $renderer)
     {
+        $this->_renderer = $renderer;
         $this->_driver = $driver;
         $this->_session = new \Behat\Mink\Session($this->_driver);
         $this->_initSession();
-        $this->_renderer = $renderer;
     }
 
     /**
@@ -337,7 +337,11 @@ class JR_Mink_Test_Mink
                 $lang = null;
         }
         if ($lang) {
-            $this->_session->setRequestHeader('Accept-Language', $lang);
+            try {
+                $this->_session->setRequestHeader('Accept-Language', $lang);
+            } catch (\Behat\Mink\Exception\UnsupportedDriverActionException $e) {
+                $this->getRenderer()->error($e->getMessage());
+            }
         }
 
         return $this;
