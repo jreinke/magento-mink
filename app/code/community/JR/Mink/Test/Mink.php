@@ -3,14 +3,9 @@
 class JR_Mink_Test_Mink
 {
     /**
-     * @var \Behat\Mink\Driver\DriverInterface
+     * @var array of \Behat\Mink\Session
      */
-    protected $_driver = null;
-
-    /**
-     * @var \Behat\Mink\Session
-     */
-    protected $_session = null;
+    protected $_sessions = null;
 
     /**
      * @var JR_Output_Renderer_Abstract
@@ -18,15 +13,11 @@ class JR_Mink_Test_Mink
     protected $_renderer = null;
 
     /**
-     * @param \Behat\Mink\Driver\DriverInterface $driver
      * @param JR_Output_Renderer_Abstract $renderer
      */
-    public function __construct(\Behat\Mink\Driver\DriverInterface $driver, JR_Output_Renderer_Abstract $renderer)
+    public function __construct(JR_Output_Renderer_Abstract $renderer)
     {
         $this->_renderer = $renderer;
-        $this->_driver = $driver;
-        $this->_session = new \Behat\Mink\Session($this->_driver);
-        $this->_initSession();
     }
 
     /**
@@ -227,41 +218,12 @@ class JR_Mink_Test_Mink
     }
 
     /**
-     * @return \Behat\Mink\Driver\DriverInterface
-     */
-    public function getDriver()
-    {
-        return $this->_driver;
-    }
-
-    /**
-     * @param \Behat\Mink\Driver\DriverInterface $driver
-     * @return JR_Mink_Test_Mink
-     */
-    public function setDriver($driver)
-    {
-        $this->_driver = $driver;
-
-        return $this;
-    }
-
-    /**
+     * @param string $name
      * @return \Behat\Mink\Session
      */
-    public function getSession()
+    public function getSession($name = 'goutte')
     {
-        return $this->_session;
-    }
-
-    /**
-     * @param \Behat\Mink\Session $session
-     * @return JR_Mink_Test_Mink
-     */
-    public function setSession($session)
-    {
-        $this->_session = $session;
-
-        return $this;
+        return $this->_getSession($name);
     }
 
     /**
@@ -313,9 +275,44 @@ class JR_Mink_Test_Mink
     }
 
     /**
+     * @param string $name
+     * @return \Behat\Mink\Session
+     * @throws Exception
+     */
+    protected function _getSession($name)
+    {
+        if (!isset($this->_sessions[$name])) {
+            switch ($name) {
+                case 'goutte':
+                    $driver = new \Behat\Mink\Driver\GoutteDriver();
+                    break;
+                case 'selenium':
+                    $driver = new \Behat\Mink\Driver\SeleniumDriver();
+                    break;
+                case 'selenium2':
+                    $driver = new \Behat\Mink\Driver\Selenium2Driver();
+                    break;
+                case 'zombie':
+                    $driver = new \Behat\Mink\Driver\ZombieDriver();
+                    break;
+                case 'sahi':
+                    $driver = new \Behat\Mink\Driver\SahiDriver();
+                    break;
+                default:
+                    throw new Exception(sprintf('Could not find Mink driver with name %s', $name));
+            }
+            $this->_sessions[$name] = new \Behat\Mink\Session($driver);
+            $this->_initSession($this->_sessions[$name]);
+        }
+
+        return $this->_sessions[$name];
+    }
+
+    /**
+     * @param \Behat\Mink\Session $session
      * @return JR_Mink_Test_Mink
      */
-    protected function _initSession()
+    protected function _initSession($session)
     {
         switch (php_sapi_name()) {
             case 'cli':
@@ -338,7 +335,7 @@ class JR_Mink_Test_Mink
         }
         if ($lang) {
             try {
-                $this->_session->setRequestHeader('Accept-Language', $lang);
+                $session->setRequestHeader('Accept-Language', $lang);
             } catch (\Behat\Mink\Exception\UnsupportedDriverActionException $e) {
                 $this->getRenderer()->error($e->getMessage());
             }
