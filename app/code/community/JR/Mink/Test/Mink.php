@@ -8,6 +8,11 @@ class JR_Mink_Test_Mink
     protected $_sessions = null;
 
     /**
+     * @var string
+     */
+    protected $_driver = 'goutte';
+
+    /**
      * @var JR_Output_Renderer_Abstract
      */
     protected $_renderer = null;
@@ -18,6 +23,16 @@ class JR_Mink_Test_Mink
     public function __construct(JR_Output_Renderer_Abstract $renderer)
     {
         $this->_renderer = $renderer;
+    }
+
+    /**
+     * Stop driver
+     */
+    public function __destruct()
+    {
+        if ($this->getSession()) {
+            $this->getSession()->getDriver()->stop();
+        }
     }
 
     /**
@@ -92,42 +107,6 @@ class JR_Mink_Test_Mink
     }
 
     /**
-     * @return Mage_Customer_Model_Session
-     */
-    public function getCustomerSession()
-    {
-        return Mage::getModel('customer/session');
-    }
-
-    /**
-     * @return Mage_Checkout_Model_Session
-     */
-    public function getCheckoutSession()
-    {
-        return Mage::getModel('checkout/session');
-    }
-
-    /**
-     * @return Mage_Sales_Model_Quote
-     */
-    public function getQuote()
-    {
-        return $this->getCheckoutSession()->getQuote();
-    }
-
-    /**
-     * @return JR_Mink_Test_Mink
-     */
-    public function clearQuote()
-    {
-        $quote = $this->getQuote();
-        $quote->getItemsCollection()->walk('delete');
-        $quote->save();
-
-        return $this;
-    }
-
-    /**
      * @param string $url
      * @param bool $quiet
      * @return \Behat\Mink\Session
@@ -174,56 +153,11 @@ class JR_Mink_Test_Mink
     }
 
     /**
-     * @param string $email
-     * @param null $store
-     * @param bool $quiet
-     * @return JR_Mink_Test_Mink
-     */
-    public function authenticate($email, $store = null, $quiet = false)
-    {
-        $store = Mage::app()->getStore($store);
-        if (!$this->getCustomerSession()->isLoggedIn()) {
-            $customer = Mage::getModel('customer/customer')
-                ->setWebsiteId($store->getWebsiteId())
-                ->loadByEmail($email);
-            if (!$customer->getId() && false === $quiet) {
-                // Error and abort
-                $this->abort(sprintf(
-                    "Failed retrieving customer with email '%s' in store '%s'",
-                    $email,
-                    $store->getCode()
-                ));
-            }
-            $this->getCustomerSession()->loginById($customer->getId());
-        }
-        session_write_close();
-
-        if (false === $quiet) {
-            $renderer = $this->getRenderer();
-            $renderer->start(sprintf(
-                "Authenticating customer with email '%s' in store '%s'",
-                $email,
-                Mage::app()->getStore($store)->getCode()
-            ));
-            if ($this->getCustomerSession()->isLoggedIn()) {
-                $session = $this->getSession();
-                $session->setCookie(session_name(), $this->getCustomerSession()->getSessionId());
-                $renderer->success(' [OK]');
-            } else {
-                $renderer->error(' [FAILED]');
-            }
-        }
-
-        return $this;
-    }
-
-    /**
-     * @param string $name
      * @return \Behat\Mink\Session
      */
-    public function getSession($name = 'goutte')
+    public function getSession()
     {
-        return $this->_getSession($name);
+        return $this->_getSession($this->_driver);
     }
 
     /**
@@ -241,6 +175,21 @@ class JR_Mink_Test_Mink
     public function setRenderer($renderer)
     {
         $this->_renderer = $renderer;
+
+        return $this;
+    }
+
+    /**
+     * @param $driver
+     * @return JR_Mink_Test_Mink
+     */
+    public function setDriver($driver, $quiet = false)
+    {
+        $this->_driver = $driver;
+
+        if (false === $quiet) {
+            $this->output($this->bold(sprintf('Now using %s driver', ucfirst($driver))));
+        }
 
         return $this;
     }
@@ -301,6 +250,7 @@ class JR_Mink_Test_Mink
                 default:
                     throw new Exception(sprintf('Could not find Mink driver with name %s', $name));
             }
+            $driver->start();
             $this->_sessions[$name] = new \Behat\Mink\Session($driver);
             $this->_initSession($this->_sessions[$name]);
         }

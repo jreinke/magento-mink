@@ -55,6 +55,15 @@ abstract class JR_Output_Renderer_Abstract
         return $this->colorize($str, $this->_errorColor);
     }
 
+    public function br($count = 1)
+    {
+        for ($i = 0; $i < $count; $i++) {
+            $this->output('');
+        }
+
+        return $this;
+    }
+
     public function section($str = '')
     {
         $repeat = $this->_sectionLength;
