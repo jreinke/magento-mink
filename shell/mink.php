@@ -37,7 +37,6 @@ class Mage_Shell_Mink extends Mage_Shell_Abstract
                         if (substr($method->getName(), 0, 4) !== 'test') {
                             continue;
                         }
-                        $renderer->output($renderer->bold(sprintf('Running %s::%s()', $className, $method->getName())));
                         try {
                             $object->{$method->getName()}();
                         } catch (Exception $e) {

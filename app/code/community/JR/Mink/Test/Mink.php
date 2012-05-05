@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * @method JR_Output_Renderer_Abstract output(string $str)
+ * @method JR_Output_Renderer_Abstract success(string $str)
+ * @method JR_Output_Renderer_Abstract error(string $str)
+ * @method JR_Output_Renderer_Abstract bold(string $str)
+ * @method JR_Output_Renderer_Abstract red(string $str)
+ * @method JR_Output_Renderer_Abstract green(string $str)
+ * @method JR_Output_Renderer_Abstract section(string $str)
+ * @method JR_Output_Renderer_Abstract pad(string $str, int $length)
+ * @method JR_Output_Renderer_Abstract br()
+ */
 class JR_Mink_Test_Mink
 {
     /**
@@ -118,6 +129,7 @@ class JR_Mink_Test_Mink
         if (false === $quiet) {
             $status = $session->getStatusCode();
             $renderer = $this->getRenderer();
+            $url = Mage::helper('core/string')->truncate($url, $renderer->getSectionLength() - 20);
             $renderer->start('Visiting ' . $url);
             if ($status == 200) {
                 $renderer->success(' [OK]');
@@ -132,7 +144,7 @@ class JR_Mink_Test_Mink
 
     /**
      * @param string $selector
-     * @param string $locator
+     * @param string|array $locator
      * @param bool $quiet
      * @return mixed
      */
@@ -143,13 +155,31 @@ class JR_Mink_Test_Mink
 
     /**
      * @param string $selector
-     * @param string $locator
+     * @param string|array $locator
      * @param bool $quiet
      * @return mixed
      */
     public function findAll($selector, $locator, $quiet = false)
     {
         return $this->_find($selector, $locator, true, $quiet);
+    }
+
+    /**
+     * @param mixed $bool
+     * @param string $success
+     * @param string $error
+     * @return JR_Mink_Test_Mink
+     */
+    public function attempt($bool, $success, $error)
+    {
+        $renderer = $this->getRenderer();
+        if ($bool) {
+            $renderer->success($success);
+        } else {
+            $renderer->error($error);
+        }
+
+        return $this;
     }
 
     /**
@@ -195,8 +225,30 @@ class JR_Mink_Test_Mink
     }
 
     /**
+     * @param string $storeCode
+     * @param bool $quiet
+     * @return JR_Mink_Test_Mink
+     */
+    public function setCurrentStore($storeCode, $quiet = false)
+    {
+        $renderer = $this->getRenderer();
+        try {
+            $store = Mage::app()->getStore($storeCode);
+            Mage::app()->setCurrentStore($store->getId());
+            if (false === $quiet) {
+                $renderer->output($renderer->bold(sprintf("Switching to store '%s'", $storeCode)));
+            }
+        } catch (Exception $e) {
+            Mage::logException($e);
+            $renderer->error(sprintf("Could not switch to store with code '%s'", $storeCode));
+        }
+
+        return $this;
+    }
+
+    /**
      * @param string $selector
-     * @param string $locator
+     * @param string|array $locator
      * @param bool $all
      * @param bool $quiet
      * @return mixed
@@ -212,6 +264,9 @@ class JR_Mink_Test_Mink
 
         if (false === $quiet) {
             $renderer = $this->getRenderer();
+            if (is_array($locator)) {
+                $locator = $locator[0] . ' => ' . $locator[1];
+            }
             $renderer->start(sprintf("Finding%s '%s' with selector '%s'", $all ? ' all' : '', $locator, $selector));
             if ($result) {
                 $renderer->success(' [OK]');

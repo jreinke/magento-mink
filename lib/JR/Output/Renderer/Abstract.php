@@ -73,8 +73,8 @@ abstract class JR_Output_Renderer_Abstract
             $repeat = max(0, $repeat - $length - 2);
         }
         $output = str_repeat('-', floor($repeat / 2))
-                . $str
-                . str_repeat('-', ceil($repeat / 2));
+            . $str
+            . str_repeat('-', ceil($repeat / 2));
 
         return $this->output($output);
     }
@@ -84,10 +84,10 @@ abstract class JR_Output_Renderer_Abstract
         $this->_beforeEcho();
 
         echo $this->_prefix
-           . str_repeat($this->_indentString, (int) $indent)
-           . $str
-           . $this->_suffix
-           . ($eol ? $this->_eol : '');
+            . str_repeat($this->_indentString, (int) $indent)
+            . $str
+            . $this->_suffix
+            . ($eol ? $this->_eol : '');
         if ($exit) {
             exit;
         }
@@ -165,6 +165,18 @@ abstract class JR_Output_Renderer_Abstract
     public function setErrorColor($str)
     {
         $this->_errorColor = $str;
+
+        return $this;
+    }
+
+    public function getSectionLength()
+    {
+        return $this->_sectionLength;
+    }
+
+    public function setSectionLength($length)
+    {
+        $this->_sectionLength = $length;
 
         return $this;
     }
